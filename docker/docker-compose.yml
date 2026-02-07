@@ -1,0 +1,34 @@
+name: app
+
+services:
+  database:
+    container_name: app_postgres
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE_NAME:-app}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - ./dev-data/postgres:/var/lib/postgresql/data
+    ports:
+      - '5435:5432'
+    shm_size: 128mb
+    restart: always
+    healthcheck:
+      test: pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE_NAME:-app}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: app_redis
+    image: docker.io/valkey/valkey:9
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: redis-cli ping || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always

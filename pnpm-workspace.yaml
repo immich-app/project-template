@@ -1,0 +1,27 @@
+packages:
+  - i18n
+  - open-api/typescript-sdk
+  - server
+  - web
+ignoredBuiltDependencies:
+  - "@nestjs/core"
+  - "@swc/core"
+  - esbuild
+onlyBuiltDependencies:
+  - "@tailwindcss/oxide"
+  - bcrypt
+packageExtensions:
+  nestjs-kysely:
+    dependencies:
+      tslib: "*"
+  nestjs-otel:
+    dependencies:
+      tslib: "*"
+  bcrypt:
+    dependencies:
+      node-addon-api: "*"
+      node-gyp: "*"
+dedupePeerDependents: false
+preferWorkspacePackages: true
+injectWorkspacePackages: true
+shamefullyHoist: false

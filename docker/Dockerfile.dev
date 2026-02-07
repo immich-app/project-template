@@ -1,0 +1,23 @@
+# dev build
+FROM node:24-bookworm-slim AS dev
+
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+    tini git build-essential python3 curl && \
+  rm -rf /var/lib/apt/lists/*
+
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+  CI=1 \
+  COREPACK_HOME=/tmp
+
+RUN corepack enable pnpm
+
+WORKDIR /usr/src/app
+
+ENV PATH="${PATH}:/usr/src/app/server/bin:/usr/src/app/web/bin" \
+  IMMICH_ENV=development
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["tini", "--", "/entrypoint.sh"]

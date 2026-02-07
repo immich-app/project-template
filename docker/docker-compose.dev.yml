@@ -1,0 +1,96 @@
+name: immichtemplate-dev
+
+services:
+  server:
+    container_name: immichtemplate_server
+    command: ["run-server"]
+    image: immichtemplate-server-dev:latest
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.dev
+      target: dev
+    restart: unless-stopped
+    volumes:
+      - ..:/usr/src/app
+      - /etc/localtime:/etc/localtime:ro
+      - pnpm-store:/usr/src/app/.pnpm-store
+      - server-node_modules:/usr/src/app/server/node_modules
+      - web-node_modules:/usr/src/app/web/node_modules
+      - sdk-node_modules:/usr/src/app/open-api/typescript-sdk/node_modules
+      - app-node_modules:/usr/src/app/node_modules
+      - sveltekit:/usr/src/app/web/.svelte-kit
+      - coverage:/usr/src/app/web/coverage
+    env_file:
+      - .env
+    ports:
+      - 9230:9230
+      - 9231:9231
+      - 2283:2283
+    depends_on:
+      redis:
+        condition: service_started
+      database:
+        condition: service_healthy
+
+  web:
+    container_name: immichtemplate_web
+    image: immichtemplate-web-dev:latest
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.dev
+      target: dev
+    command: ["run-web"]
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
+      - 24678:24678
+    volumes:
+      - ..:/usr/src/app
+      - pnpm-store:/usr/src/app/.pnpm-store
+      - server-node_modules:/usr/src/app/server/node_modules
+      - web-node_modules:/usr/src/app/web/node_modules
+      - sdk-node_modules:/usr/src/app/open-api/typescript-sdk/node_modules
+      - app-node_modules:/usr/src/app/node_modules
+      - sveltekit:/usr/src/app/web/.svelte-kit
+      - coverage:/usr/src/app/web/coverage
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_started
+
+  redis:
+    container_name: immichtemplate_redis
+    image: docker.io/valkey/valkey:9@sha256:546304417feac0874c3dd576e0952c6bb8f06bb4093ea0c9ca303c73cf458f63
+    healthcheck:
+      test: redis-cli ping || exit 1
+
+  database:
+    container_name: immichtemplate_postgres
+    image: pgvector/pgvector:pg18
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - ${APP_DATA_LOCATION}/postgres:/var/lib/postgresql
+    ports:
+      - 5432:5432
+    shm_size: 128mb
+    healthcheck:
+      test: pg_isready -d ${DB_DATABASE_NAME} -U ${DB_USERNAME}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pnpm-store:
+  server-node_modules:
+  web-node_modules:
+  sdk-node_modules:
+  app-node_modules:
+  sveltekit:
+  coverage:
